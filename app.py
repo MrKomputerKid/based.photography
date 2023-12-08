@@ -66,7 +66,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-@require_token_auth  # Requires valid SSH key for access
+@basic_auth.required
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
