@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, send_from_directory, abort
+import flask
 from flask_basicauth import BasicAuth
 from werkzeug.utils import secure_filename
 from paramiko import RSAKey, SSHException
@@ -7,8 +7,9 @@ from io import StringIO
 from getpass import getuser
 import os
 import jwt
+from datetime import datetime, timedelta
 
-app = Flask(__name__, template_folder='/path/to/template/')
+app = flask.Flask(__name__, template_folder='/path/to/template/')
 basic_auth = BasicAuth(app)
 
 UPLOAD_FOLDER = 'uploads'
@@ -45,9 +46,9 @@ def generate_temporary_token(username):
 def require_token_auth(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        token = request.headers.get('Authorization')
+        token = flask.request.headers.get('Authorization')
         if not token or not token.startswith('Bearer '):
-            return jsonify({'error': 'Unauthorized'}), 401
+            return flask.jsonify({'error': 'Unauthorized'}), 401
 
         token = token.split(' ')[1]
 
@@ -55,9 +56,9 @@ def require_token_auth(func):
             decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
             username = decoded_token.get('sub')
         except jwt.ExpiredSignatureError:
-            return jsonify({'error': 'Token has expired'}), 401
+            return flask.jsonify({'error': 'Token has expired'}), 401
         except jwt.InvalidTokenError:
-            return jsonify({'error': 'Invalid token'}), 401
+            return flask.jsonify({'error': 'Invalid token'}), 401
 
         return func(*args, **kwargs)
 
@@ -65,61 +66,48 @@ def require_token_auth(func):
 
 @app.route('/')
 def index():
-    username = request.args.get('username')
+    username = flask.request.args.get('username')
     if username:
         token = generate_temporary_token(username)
-        return jsonify({'token': token.decode('utf-8')})
-    return render_template('index.html')
+        return flask.jsonify({'token': token.decode('utf-8')})
+    return flask.render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 @basic_auth.required
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+    if 'file' not in flask.request.files:
+        return flask.jsonify({'error': 'No file part'}), 400
 
-    file = request.files['file']
+    file = flask.request.files['file']
 
     if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+        return flask.jsonify({'error': 'No selected file'}), 400
 
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return redirect(url_for('index'))
+        return flask.redirect(flask.url_for('index'))
 
-    return jsonify({'error': 'Invalid file type'}), 400
+    return flask.jsonify({'error': 'Invalid file type'}), 400
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    return flask.send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/search', methods=['GET'])
 def search_image():
-    search_query = request.args.get('query')
+    search_query = flask.request.args.get('query')
 
     if search_query:
         for filename in os.listdir(app.config['UPLOAD_FOLDER']):
             if search_query.lower() == filename.lower():
-                return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+                return flask.send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-            if search_query.lower() in filename.lower():
-                matching_images.append(filename)
         matching_images = [filename for filename in os.listdir(app.config['UPLOAD_FOLDER']) if search_query.lower() in filename.lower()]
         if matching_images:
-            return jsonify({'results': matching_images})
-        else:
-            abort(404)
-    else:
-        all_images = os.listdir(app.config['UPLOAD_FOLDER'])
-        if all_images:
-            return jsonify({'all_images': all_images})
-        else:
-            abort(404)
+            return flask.jsonify({'results': matching_images})
 
-if __name__ == '__main__':
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    app.run(debug=True)
+    flask.abort(404)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
