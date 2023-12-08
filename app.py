@@ -98,19 +98,23 @@ def search_image():
     search_query = request.args.get('query')
 
     if search_query:
-        matching_images = []
-
         for filename in os.listdir(app.config['UPLOAD_FOLDER']):
             if search_query.lower() == filename.lower():
                 return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
             if search_query.lower() in filename.lower():
                 matching_images.append(filename)
-
-        return jsonify({'results': matching_images})
+        matching_images = [filename for filename in os.listdir(app.config['UPLOAD_FOLDER']) if search_query.lower() in filename.lower()]
+        if matching_images:
+            return jsonify({'results': matching_images})
+        else:
+            abort(404)
     else:
         all_images = os.listdir(app.config['UPLOAD_FOLDER'])
-        return jsonify({'all_images': all_images})
+        if all_images:
+            return jsonify({'all_images': all_images})
+        else:
+            abort(404)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
