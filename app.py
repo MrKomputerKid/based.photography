@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template
+from flask_basicauth import BasicAuth
 from paramiko import RSAKey, SSHException
 from functools import wraps
 from io import StringIO
@@ -6,6 +7,7 @@ import os
 import jwt
 
 app = Flask(__name__)
+basic_auth = BasicAuth(app)
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -57,18 +59,12 @@ def require_token_auth(func):
 
 @app.route('/')
 def index():
-    username = request.args.get('username')
-    if username:
-        token = generate_temporary_token(username)
-        return jsonify({'token': token.decode('utf-8')})
+    # Public access to the home page
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-@require_token_auth  # Requires valid SSH key for access
-def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-
+@basic_auth.required  # Requires basic authentication for this endpoint
+@require_token_auth
     file = request.files['file']
 
     if file.filename == '':
