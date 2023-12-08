@@ -9,7 +9,7 @@ import os
 import jwt
 from datetime import datetime, timedelta
 
-app = flask.Flask(__name__, template_folder='/path/to/template/')
+app = Flask(__name__)
 basic_auth = BasicAuth(app)
 
 UPLOAD_FOLDER = 'uploads'
@@ -17,50 +17,32 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Set basic authentication creds
 app.config['BASIC_AUTH_USERNAME'] = getuser()
-app.config['BASIC_AUTH_PASSWORD'] = 'SUPER SECRET PASSWORD HERE'
+app.config['BASIC_AUTH_PASSWORD'] = 'UR_PASS'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with a strong secret key
-app.config['AUTHORIZED_KEYS_PATH'] = '/path/to/authorized_keys'  # Replace with the path to your authorized_keys file
+
+# Time interval for re-authentication (15 minutes in this example)
+REAUTH_INTERVAL = timedelta(minutes=15)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def authenticate_ssh_key(username, key):
-    authorized_keys_path = app.config['AUTHORIZED_KEYS_PATH']
-    authorized_keys = open(authorized_keys_path).read().splitlines()
+def require_reauthentication(func):
+    last_auth_time = datetime.utcnow()
 
-    try:
-        key_obj = RSAKey(file_obj=StringIO(key))
-    except SSHException:
-        return False
-
-    return key_obj.get_name() in authorized_keys
-
-def generate_temporary_token(username):
-    expiration_time = datetime.utcnow() + timedelta(minutes=30)
-    payload = {'sub': username, 'exp': expiration_time}
-    token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
-    return token
-
-def require_token_auth(func):
-    @wraps(func)
     def wrapper(*args, **kwargs):
-        token = flask.request.headers.get('Authorization')
-        if not token or not token.startswith('Bearer '):
-            return flask.jsonify({'error': 'Unauthorized'}), 401
+        nonlocal last_auth_time
 
-        token = token.split(' ')[1]
+        # Check if it's time to re-authenticate
+        if datetime.utcnow() - last_auth_time > REAUTH_INTERVAL:
+            return basic_auth.unauthorized()
 
-        try:
-            decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-            username = decoded_token.get('sub')
-        except jwt.ExpiredSignatureError:
-            return flask.jsonify({'error': 'Token has expired'}), 401
-        except jwt.InvalidTokenError:
-            return flask.jsonify({'error': 'Invalid token'}), 401
+        response = func(*args, **kwargs)
 
-        return func(*args, **kwargs)
+        # Update the last authentication time
+        last_auth_time = datetime.utcnow()
+
+        return response
 
     return wrapper
 
