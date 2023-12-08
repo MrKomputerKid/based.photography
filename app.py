@@ -95,18 +95,27 @@ def uploaded_file(filename):
 
 @app.route('/search', methods=['GET'])
 def search_image():
+    search_query = request.args.get('query')
     image_name = request.args.get('name')
 
-    if not image_name:
-        return jsonify({'error': 'Image name not provided'}), 400
+    if image_name:
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_name)
 
-    # Assuming your images are stored in the UPLOAD_FOLDER
-    image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_name)
+        if os.path.exists(image_path):
+            return send_from_directory(app.config['UPLOAD_FOLDER'], image_name)
+        else:
+            abort(404)
+    elif search_query:
+        matching_images = []
 
-    if os.path.exists(image_path):
-        return send_from_directory(app.config['UPLOAD_FOLDER'], image_name)
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            if search_query.lower() in filename.lower():
+                matching_images.append(filename)
+
+        return jsonify({'results': matching_images})
     else:
-        abort(404)
+        return jsonify({'error': 'Search query not provided'}), 400
+
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
