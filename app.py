@@ -96,7 +96,7 @@ def uploaded_file(filename):
 
 @app.route('/search', methods=['GET'])
 def search_image():
-    search_query = flask.request.args.get('query')
+    search_query = flask.request.args.get('name')
 
     if search_query:
         for filename in os.listdir(app.config['UPLOAD_FOLDER']):
