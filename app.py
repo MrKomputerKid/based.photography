@@ -57,7 +57,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-@ssh_auth.login_required  # Requires valid SSH key for access
+@require_ssh_key_auth  # Requires valid SSH key for access
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
