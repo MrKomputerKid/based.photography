@@ -9,7 +9,7 @@ import os
 import jwt
 from datetime import datetime, timedelta
 
-app = Flask(__name__)
+app = flask(__name__)
 basic_auth = BasicAuth(app)
 
 UPLOAD_FOLDER = 'uploads'
@@ -68,7 +68,10 @@ def upload_file():
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return flask.redirect(flask.url_for('index'))
+        if os.path.exists(upload_path):
+            return flask.jsonify({'error': 'File already exists!'})
+        else:
+            return flask.redirect(flask.url_for('index'))
 
     return flask.jsonify({'error': 'Invalid file type'}), 400
 
