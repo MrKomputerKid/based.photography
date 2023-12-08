@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify, render_template
-from paramiko import RSAKey, SSHException, Transport
+from paramiko import RSAKey, SSHException
 from functools import wraps
 from io import StringIO
 import os
+import jwt
 
 app = Flask(__name__)
 
@@ -27,14 +28,20 @@ def authenticate_ssh_key(username, key):
 
     return key_obj.get_name() in authorized_keys
 
-def require_ssh_key_auth(func):
+def generate_temporary_token(username):
+    expiration_time = datetime.utcnow() + timedelta(minutes=30)
+    payload = {'sub': username, 'exp': expiration_time}
+    token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
+    return token
+
+def require_token_auth(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
+        token = request.headers.get('Authorization')
+        if not token or not token.startswith('Bearer '):
             return jsonify({'error': 'Unauthorized'}), 401
 
-        token = auth_header.split(' ')[1]
+        token = token.split(' ')[1]
 
         try:
             decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
@@ -44,20 +51,20 @@ def require_ssh_key_auth(func):
         except jwt.InvalidTokenError:
             return jsonify({'error': 'Invalid token'}), 401
 
-        key = request.headers.get('SSH-Key')
-        if not key or not authenticate_ssh_key(username, key):
-            return jsonify({'error': 'Invalid SSH key'}), 401
-
         return func(*args, **kwargs)
 
     return wrapper
 
 @app.route('/')
 def index():
+    username = request.args.get('username')
+    if username:
+        token = generate_temporary_token(username)
+        return jsonify({'token': token.decode('utf-8')})
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-@require_ssh_key_auth  # Requires valid SSH key for access
+@require_token_auth  # Requires valid SSH key for access
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
