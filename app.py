@@ -59,12 +59,18 @@ def require_token_auth(func):
 
 @app.route('/')
 def index():
-    # Public access to the home page
+    username = request.args.get('username')
+    if username:
+        token = generate_temporary_token(username)
+        return jsonify({'token': token.decode('utf-8')})
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-@basic_auth.required  # Requires basic authentication for this endpoint
-@require_token_auth
+@require_token_auth  # Requires valid SSH key for access
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
     file = request.files['file']
 
     if file.filename == '':
