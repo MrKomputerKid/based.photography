@@ -51,18 +51,32 @@ def require_ssh_key_auth(func):
     return wrapper
 
 @app.route('/')
-@require_ssh_key_auth
 def index():
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-@require_ssh_key_auth
+@ssh_auth.login_required  # Requires valid SSH key for access
 def upload_file():
-    # ... your existing upload logic ...
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return jsonify({'success': True, 'message': 'File uploaded successfully'}), 200
+
+    return jsonify({'error': 'Invalid file type'}), 400
 
 @app.route('/search', methods=['GET'])
 def search_image():
-    # ... your existing search logic ...
+    image_url = request.args.get('url')
+    # Add your image search logic here based on the provided URL
+    return jsonify({'url': image_url})
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
