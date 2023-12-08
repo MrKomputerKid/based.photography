@@ -3,6 +3,7 @@ from flask_basicauth import BasicAuth
 from paramiko import RSAKey, SSHException
 from functools import wraps
 from io import StringIO
+from getpass import getuser
 import os
 import jwt
 
@@ -11,6 +12,10 @@ basic_auth = BasicAuth(app)
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Set basic authentication creds
+app.config['BASIC_AUTH_USERNAME'] = getuser()
+app.config['BASIC_AUTH_PASSWORD'] = 'UR_PASS'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with a strong secret key
