@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for, send_from_directory
 from flask_basicauth import BasicAuth
+from werkzeug.utils import secure_filename
 from paramiko import RSAKey, SSHException
 from functools import wraps
 from io import StringIO
@@ -7,7 +8,7 @@ from getpass import getuser
 import os
 import jwt
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='/path/to/template/')
 basic_auth = BasicAuth(app)
 
 UPLOAD_FOLDER = 'uploads'
@@ -15,7 +16,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Set basic authentication creds
 app.config['BASIC_AUTH_USERNAME'] = getuser()
-app.config['BASIC_AUTH_PASSWORD'] = 'UR_PASS'
+app.config['BASIC_AUTH_PASSWORD'] = 'SUPER SECRET PASSWORD HERE'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with a strong secret key
@@ -84,15 +85,32 @@ def upload_file():
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return jsonify({'success': True, 'message': 'File uploaded successfully'}), 200
+        return redirect(url_for('index'))
 
     return jsonify({'error': 'Invalid file type'}), 400
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 @app.route('/search', methods=['GET'])
 def search_image():
-    image_url = request.args.get('url')
-    # Add your image search logic here based on the provided URL
-    return jsonify({'url': image_url})
+    image_name = request.args.get('name')
+
+    if not image_name:
+        return jsonify({'error': 'Image name not provided'}), 400
+
+    # Assuming your images are stored in the UPLOAD_FOLDER
+    image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_name)
+
+    if os.path.exists(image_path):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], image_name)
+    else:
+        abort(404)
+if __name__ == '__main__':
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+    app.run(debug=True)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
