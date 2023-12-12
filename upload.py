@@ -1,5 +1,4 @@
 import flask
-from flask import Flask
 from flask_basicauth import BasicAuth
 from werkzeug.utils import secure_filename
 from getpass import getuser
