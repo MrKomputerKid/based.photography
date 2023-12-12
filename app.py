@@ -48,9 +48,7 @@ def require_reauthentication(func):
 
 @app.route('/')
 def index():
-    username = flask.request.args.get('username')
-    if username:
-        return flask.render_template('index.html')
+    return flask.render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 @basic_auth.required
