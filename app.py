@@ -2,7 +2,6 @@ import flask
 from flask import Flask
 from flask_basicauth import BasicAuth
 from werkzeug.utils import secure_filename
-from paramiko import RSAKey, SSHException
 from functools import wraps
 from io import StringIO
 from getpass import getuser
@@ -51,9 +50,7 @@ def require_reauthentication(func):
 def index():
     username = flask.request.args.get('username')
     if username:
-        token = generate_temporary_token(username)
-        return flask.jsonify({'token': token.decode('utf-8')})
-    return flask.render_template('index.html')
+        return flask.render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 @basic_auth.required
