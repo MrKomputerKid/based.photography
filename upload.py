@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify
+import flask
+from flask import Flask
 from flask_basicauth import BasicAuth
 from werkzeug.utils import secure_filename
 from getpass import getuser
@@ -22,25 +23,25 @@ def allowed_file(filename):
 @app.route('/upload', methods=['POST'])
 @basic_auth.required
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+    if 'file' not in flask.request.files:
+        return flask.jsonify({'error': 'No file part'}), 400
 
-    file = request.files['file']
+    file = flask.request.files['file']
 
     if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+        return flask.jsonify({'error': 'No selected file'}), 400
 
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
         if os.path.exists(upload_path):
-            return jsonify({'error': 'File already exists'}), 400
+            return flask.jsonify({'error': 'File already exists'}), 400
 
         file.save(upload_path)
-        return jsonify({'success': True, 'message': 'File uploaded successfully'}), 200
+        return flask.jsonify({'success': True, 'message': 'File uploaded successfully'}), 200
 
-    return jsonify({'error': 'Invalid file type'}), 400
+    return flask.jsonify({'error': 'Invalid file type'}), 400
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
