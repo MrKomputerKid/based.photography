@@ -1,5 +1,6 @@
 import flask
 from flask import Flask
+from flask_oauthlib.client import OAuth
 from flask_basicauth import BasicAuth
 from werkzeug.utils import secure_filename
 from functools import wraps
@@ -7,51 +8,69 @@ from io import StringIO
 from getpass import getuser
 import os
 import jwt
-from datetime import datetime, timedelta
 
 app = Flask(__name__)
-basic_auth = BasicAuth(app)
 
+secret_key = os.environ.get('YOUR_SECRET_KEY')
+
+oauth = OAuth(app)
+
+google = oauth.remote_app(
+    'google',
+    consumer_key='YOUR_GOOGLE_CLIENT_ID',
+    consumer_secret='YOUR_SECRET',
+    request_token_params={
+        'scope': 'email',
+    },
+    base_url='https://www.googleapis.com/oauth2/v1/',
+    request_token_url=None,
+    access_token_method='POST',
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+)
+
+@app.route('/')
+def index():
+    if 'google_token' in flask.session:
+        me = google.get('userinfo')
+        return f'Logged in as: {me.data["email"]}'
+    return 'Not logged in'
+
+@app.route('/login')
+def login():
+    return google.authorize(callback=url_for('authorized', _external=True))
+
+@app.route('/logout')
+def logout():
+    flask.session.pop('google_token', None)
+    return flask.redirect(url_for('index'))
+
+@app.route('/login/authorized')
+def authorized():
+    response = google.authorized_response()
+    if response is None or response.get('access_token') is None:
+        return 'Access denied: reason={} error={}'.format(
+            flask.request.args['error_reason'],
+            flask.request.args['error_description']
+        )
+
+    flask.session['google_token'] = (response['access_token'], '')
+    me = google.get('userinfo')
+    return 'Logged in as: ' + str(me.data)
+
+@google.tokengetter
+def get_google_oauth_token():
+    return flask.session.get('google_token')
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-# Set basic authentication creds
-app.config['BASIC_AUTH_USERNAME'] = getuser()
-app.config['BASIC_AUTH_PASSWORD'] = 'UR_PASS'
-
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# Time interval for re-authentication (15 minutes in this example)
-REAUTH_INTERVAL = timedelta(minutes=15)
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def require_reauthentication(func):
-    last_auth_time = datetime.utcnow()
-
-    def wrapper(*args, **kwargs):
-        nonlocal last_auth_time
-
-        # Check if it's time to re-authenticate
-        if datetime.utcnow() - last_auth_time > REAUTH_INTERVAL:
-            return basic_auth.unauthorized()
-
-        response = func(*args, **kwargs)
-
-        # Update the last authentication time
-        last_auth_time = datetime.utcnow()
-
-        return response
-
-    return wrapper
 
 @app.route('/')
 def index():
     return flask.render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-@basic_auth.required
 def upload_file():
     if 'file' not in flask.request.files:
         return flask.jsonify({'error': 'No file part'}), 400
