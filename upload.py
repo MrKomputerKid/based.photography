@@ -28,36 +28,36 @@ google = oauth.remote_app(
 
 @app.route('/')
 def index():
-    if 'google_token' in session:
+    if 'google_token' in flask.session:
         me = google.get('userinfo')
         return f'Logged in as: {me.data["email"]}'
     return 'Not logged in'
 
 @app.route('/login')
 def login():
-    return google.authorize(callback=url_for('authorized', _external=True))
+    return google.authorize(callback=flask.url_for('authorized', _external=True))
 
 @app.route('/logout')
 def logout():
-    session.pop('google_token', None)
-    return redirect(url_for('index'))
+    flask.session.pop('google_token', None)
+    return flask.redirect(flask.url_for('index'))
 
 @app.route('/login/authorized')
 def authorized():
     response = google.authorized_response()
     if response is None or response.get('access_token') is None:
         return 'Access denied: reason={} error={}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
+            flask.request.args['error_reason'],
+            flask.request.args['error_description']
         )
 
-    session['google_token'] = (response['access_token'], '')
+    flask.session['google_token'] = (response['access_token'], '')
     me = google.get('userinfo')
     return 'Logged in as: ' + str(me.data)
 
 @google.tokengetter
 def get_google_oauth_token():
-    return session.get('google_token')
+    return flask.session.get('google_token')
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -69,7 +69,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/upload', methods=['POST'])
-@basic_auth.required
 def upload_file():
     if 'file' not in flask.request.files:
         return flask.jsonify({'error': 'No file part'}), 400

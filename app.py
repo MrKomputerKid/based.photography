@@ -38,12 +38,12 @@ def index():
 
 @app.route('/login')
 def login():
-    return google.authorize(callback=url_for('authorized', _external=True))
+    return google.authorize(callback=flask.url_for('authorized', _external=True))
 
 @app.route('/logout')
 def logout():
     flask.session.pop('google_token', None)
-    return flask.redirect(url_for('index'))
+    return flask.redirect(flask.url_for('index'))
 
 @app.route('/login/authorized')
 def authorized():
@@ -80,7 +80,7 @@ def upload_file():
     if file.filename == '':
         return flask.jsonify({'error': 'No selected file'}), 400
 
-    if file and allowed_file(file.filename):
+    if file and flask.allowed_file(file.filename):
         filename = secure_filename(file.filename)
         upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         if os.path.exists(upload_path):
