@@ -1,5 +1,5 @@
 import flask
-from flask import Flask
+from flask import Flask, session
 from flask_oauthlib.client import OAuth
 from werkzeug.utils import secure_filename
 from getpass import getuser
@@ -8,9 +8,7 @@ import os
 app = Flask(__name__)
 app.secret_key = 'YOUR_SECRET_KEY'
 
-
 oauth = OAuth(app)
-
 
 google = oauth.remote_app(
     'google',
@@ -28,19 +26,19 @@ google = oauth.remote_app(
 
 @app.route('/')
 def index():
-    if 'google_token' in flask.session:
+    if 'google_token' in session:
         me = google.get('userinfo')
         return f'Logged in as: {me.data["email"]}'
     return 'Not logged in'
 
 @app.route('/login')
 def login():
-    return google.authorize(callback=flask.url_for('authorized', _external=True))
+    return google.authorize(callback=app.url_for('authorized', _external=True))
 
 @app.route('/logout')
 def logout():
-    flask.session.pop('google_token', None)
-    return flask.redirect(flask.url_for('index'))
+    session.pop('google_token', None)
+    return flask.redirect(app.url_for('index'))
 
 @app.route('/login/authorized')
 def authorized():
@@ -51,17 +49,16 @@ def authorized():
             flask.request.args['error_description']
         )
 
-    flask.session['google_token'] = (response['access_token'], '')
+    session['google_token'] = (response['access_token'], '')
     me = google.get('userinfo')
     return 'Logged in as: ' + str(me.data)
 
 @google.tokengetter
 def get_google_oauth_token():
-    return flask.session.get('google_token')
+    return session.get('google_token')
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
