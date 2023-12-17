@@ -7,6 +7,7 @@ from io import StringIO
 from getpass import getuser
 import os
 import jwt
+from upload import allowed_file
 
 app = Flask(__name__)
 
