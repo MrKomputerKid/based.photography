@@ -1,33 +1,13 @@
 import flask
 from flask import Flask, render_template, jsonify, send_from_directory, redirect, url_for
-from flask_oauthlib.client import OAuth
 from werkzeug.utils import secure_filename
-from functools import wraps
-from io import StringIO
-from getpass import getuser
 import os
-import jwt
 from upload import allowed_file
 
 app = Flask(__name__)
 
-secret_key = os.environ.get('YOUR_SECRET_KEY')
-
-oauth = OAuth(app)
-
-google = oauth.remote_app(
-    'google',
-    consumer_key='YOUR_GOOGLE_CLIENT_ID',
-    consumer_secret='YOUR_SECRET',
-    request_token_params={
-        'scope': 'email',
-    },
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-)
+# Set the maximum upload size to 16 megabytes
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -38,7 +18,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def index():
     # Get the list of files in the UPLOAD_FOLDER directory
     files = os.listdir(app.config['UPLOAD_FOLDER'])
-    # Sort the files by modification time in descending order.
+    # Sort the files by modification time in descending order
     files.sort(key=lambda x: os.path.getmtime(os.path.join(app.config['UPLOAD_FOLDER'], x)), reverse=True)
     # Select the latest 5 files
     latest_files = files[:5]
