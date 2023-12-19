@@ -36,7 +36,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Get the list of files in the UPLOAD_FOLDER directory
+    files = os.listdir(app.config['UPLOAD_FOLDER'])
+    # Sort the files by modification time in descending order.
+    files.sort(key=lambda x: os.path.getmtime(os.path.join(app.config['UPLOAD_FOLDER'], x)), reverse=True)
+    # Select the latest 5 files
+    latest_files = files[:5]
+    # Render the template with the latest files
+    return render_template('index.html', latest_files=latest_files)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
