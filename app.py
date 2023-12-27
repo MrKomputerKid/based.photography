@@ -25,11 +25,11 @@ def is_valid_file(file):
         # Check if the file's content type is an image
         file.seek(0)
         content_type = mime.from_buffer(file.read(1024))  # Read the first 1024 bytes for content type detection
-	print("Detected MIME type:", content_type) # Print the detected MIME Type.,
+        print("Detected MIME type:", content_type) # Print the detected MIME Type.,
 
-	# Check if the detected MIME type is one of the allowed extensions.
-	expected_image_types = {'image/png', 'image/jpeg', 'image/jpg', 'image/gif'}
-	return content_type in expected_image_types
+        # Check if the detected MIME type is one of the allowed extensions.
+        expected_image_types = {'image/png', 'image/jpeg', 'image/jpg', 'image/gif'}
+        return content_type in expected_image_types
 
     return False
 
