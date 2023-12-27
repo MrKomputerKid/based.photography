@@ -1,6 +1,5 @@
 import flask
-from flask import Flask, session
-from flask_oauthlib.client import OAuth
+from flask import Flask, session, url_for
 from werkzeug.utils import secure_filename
 from getpass import getuser
 import os
@@ -31,18 +30,14 @@ def allowed_file(filename):
     return False
 
 def is_valid_file(file):
-    # Check if the file has an allowed extension
-    if allowed_file(file.filename):
-        # Check if the file's content type is an image
-        file.seek(0)  # Move the file cursor to the beginning
-        content_type = mime.from_buffer(file.read(1024))  # Read the first 1024 bytes for content type detection
-        print("Detected MIME type:", content_type)  # Print the detected MIME type for debugging
+    # Check if the file's content type is an image
+    file.seek(0)  # Move the file cursor to the beginning
+    content_type = mime.from_buffer(file.read(1024))  # Read the first 1024 bytes for content type detection
+    print("Detected MIME type:", content_type)  # Print the detected MIME type for debugging
 
-        # Check if the detected MIME type starts with an expected image prefix
-        expected_image_prefixes = {'image/png', 'image/jpeg', 'image/gif'}
-        return any(content_type.startswith(prefix) for prefix in expected_image_prefixes)
-
-    return False
+    # Check if the detected MIME type contains any of the expected image types as a substring (lenient check)
+    expected_image_types = {'image/png', 'image/jpeg', 'image/jpg', 'image/gif'}
+    return any(image_type.lower() in content_type.lower() for image_type in expected_image_types)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -62,7 +57,7 @@ def upload_file():
             return flask.jsonify({'error': 'File already exists'}), 400
 
         file.save(upload_path)
-        return flask.jsonify({'success': True, 'message': 'File uploaded successfully'}), 200
+        return flask.redirect(url_for('index'))
 
     return flask.jsonify({'error': 'Invalid file type'}), 400
 
