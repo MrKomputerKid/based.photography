@@ -23,6 +23,7 @@ def is_valid_file(file):
     # Check if the file has an allowed extension
     if allowed_file(file.filename):
         # Check if the file's content type is an image
+        file.seek(0)
         content_type = mime.from_buffer(file.read(1024))  # Read the first 1024 bytes for content type detection
 	print("Detected MIME type:", content_type) # Print the detected MIME Type.,
 
