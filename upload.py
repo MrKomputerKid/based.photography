@@ -63,7 +63,18 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    # Check if the filename has an allowed extension
+    if '.' in filename:
+        # Split the filename and extension
+        name, extension = filename.rsplit('.', 1)
+
+        # Check if the extension is in the allowed set
+        if extension.lower() in ALLOWED_EXTENSIONS:
+            # Ensure that there are no additional dots in the name part
+            if '.' not in name:
+                return True
+
+    return False
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
