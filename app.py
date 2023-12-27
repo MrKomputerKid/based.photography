@@ -15,6 +15,10 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# Initialize magic library for MIME type detection.
+mime = magic.Magic()
+
+
 def is_valid_file(file):
     # Check if the file has an allowed extension
     if allowed_file(file.filename):
