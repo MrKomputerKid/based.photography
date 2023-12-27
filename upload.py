@@ -4,6 +4,7 @@ from flask_oauthlib.client import OAuth
 from werkzeug.utils import secure_filename
 from getpass import getuser
 import os
+import magic
 
 app = Flask(__name__)
 
@@ -11,6 +12,9 @@ UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Initalize magic library for MIME type detection
+mime = magic.Magic()
 
 def allowed_file(filename):
     # Check if the filename has an allowed extension
@@ -23,6 +27,20 @@ def allowed_file(filename):
             # Ensure that there are no additional dots in the name part
             if '.' not in name:
                 return True
+
+    return False
+
+def is_valid_file(file):
+    # Check if the file has an allowed extension
+    if allowed_file(file.filename):
+        # Check if the file's content type is an image
+        file.seek(0)  # Move the file cursor to the beginning
+        content_type = mime.from_buffer(file.read(1024))  # Read the first 1024 bytes for content type detection
+        print("Detected MIME type:", content_type)  # Print the detected MIME type for debugging
+
+        # Check if the detected MIME type starts with an expected image prefix
+        expected_image_prefixes = {'image/png', 'image/jpeg', 'image/gif'}
+        return any(content_type.startswith(prefix) for prefix in expected_image_prefixes)
 
     return False
 

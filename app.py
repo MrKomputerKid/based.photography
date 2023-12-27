@@ -3,7 +3,7 @@ from flask import Flask, render_template, jsonify, send_from_directory, redirect
 from werkzeug.utils import secure_filename
 import os
 import magic
-from upload import allowed_file
+from upload import allowed_file, is_valid_file
 
 app = Flask(__name__)
 
@@ -18,20 +18,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Initialize magic library for MIME type detection.
 mime = magic.Magic()
 
-
-def is_valid_file(file):
-    # Check if the file has an allowed extension
-    if allowed_file(file.filename):
-        # Check if the file's content type is an image
-        file.seek(0)
-        content_type = mime.from_buffer(file.read(1024))  # Read the first 1024 bytes for content type detection
-        print("Detected MIME type:", content_type) # Print the detected MIME Type.,
-
-        # Check if the detected MIME type is one of the allowed extensions.
-        expected_image_types = {'image/png', 'image/jpeg', 'image/jpg', 'image/gif'}
-        return content_type in expected_image_types
-
-    return False
 
 @app.route('/')
 def index():
