@@ -24,7 +24,12 @@ def is_valid_file(file):
     if allowed_file(file.filename):
         # Check if the file's content type is an image
         content_type = mime.from_buffer(file.read(1024))  # Read the first 1024 bytes for content type detection
-        return content_type.startswith('image/')
+	print("Detected MIME type:", content_type) # Print the detected MIME Type.,
+
+	# Check if the detected MIME type is one of the allowed extensions.
+	expected_image_types = {'image/png', 'image/jpeg', 'image/jpg', 'image/gif'}
+	return content_type in expected_image_types
+
     return False
 
 @app.route('/')
