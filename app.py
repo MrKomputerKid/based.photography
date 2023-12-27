@@ -2,17 +2,30 @@ import flask
 from flask import Flask, render_template, jsonify, send_from_directory, redirect, url_for
 from werkzeug.utils import secure_filename
 import os
+import magic
 from upload import allowed_file
 
 app = Flask(__name__)
 
 # Set the maximum upload size to 16 megabytes
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Initialize magic library for MIME types.
+mime = magic.Magic
+
+def is_valid_file(file):
+    # Check if the file has an allowed extension
+    if allowed_file(file.filename)
+        # Check if the files content type is an image
+        content_type = mime.from_buffer(file.read(1024)) # Read the first 1024 bytes for content type detection.
+        return content_type.startswith('image/')
+    return False
+
 
 @app.route('/')
 def index():
