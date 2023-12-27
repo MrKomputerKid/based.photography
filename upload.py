@@ -6,7 +6,6 @@ from getpass import getuser
 import os
 
 app = Flask(__name__)
-app.secret_key = 'YOUR_SECRET_KEY'
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
