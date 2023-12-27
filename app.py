@@ -15,17 +15,13 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Initialize magic library for MIME types.
-mime = magic.Magic
-
 def is_valid_file(file):
     # Check if the file has an allowed extension
-    if allowed_file(file.filename)
-        # Check if the files content type is an image
-        content_type = mime.from_buffer(file.read(1024)) # Read the first 1024 bytes for content type detection.
+    if allowed_file(file.filename):
+        # Check if the file's content type is an image
+        content_type = mime.from_buffer(file.read(1024))  # Read the first 1024 bytes for content type detection
         return content_type.startswith('image/')
     return False
-
 
 @app.route('/')
 def index():
@@ -48,7 +44,7 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if file and allowed_file(file.filename):
+    if file and is_valid_file(file):
         filename = secure_filename(file.filename)
         upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         if os.path.exists(upload_path):
