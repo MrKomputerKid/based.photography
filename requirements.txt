@@ -1,4 +1,5 @@
 Flask==3.0.0
 Flask-OAuthlib==0.9.6
 Flask-BasicAuth==0.5.2
-Werkzeug==3.0.1
+Werkzeug==3.1.5
+urllib3>=2.6.3 # not directly required, pinned by Snyk to avoid a vulnerability
